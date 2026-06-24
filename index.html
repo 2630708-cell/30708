@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ko">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>간단한 할일 관리앱</title>
+	<style>
+		:root{font-family:Arial,Helvetica,sans-serif;background:#f5f7fb;color:#222}
+		body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh}
+		.app{width:100%;max-width:480px;background:#fff;border-radius:8px;box-shadow:0 6px 20px rgba(17,24,39,0.08);padding:20px}
+		h1{margin:0 0 12px;font-size:20px;text-align:center}
+		.input-row{display:flex;gap:8px;margin-bottom:14px}
+		input[type="text"]{flex:1;padding:10px;border:1px solid #dcdfe6;border-radius:6px;font-size:14px}
+		button{padding:10px 12px;border:none;border-radius:6px;background:#3b82f6;color:white;cursor:pointer;font-weight:600}
+		ul{list-style:none;padding:0;margin:0}
+		li{display:flex;align-items:center;justify-content:space-between;padding:8px 6px;border-bottom:1px solid #f0f2f5}
+		.task-left{display:flex;align-items:center;gap:8px}
+		.task-text{font-size:15px}
+		.task-text.done{text-decoration:line-through;color:#9aa3b2}
+		.small-btn{background:transparent;border:none;color:#ef4444;cursor:pointer;font-weight:700}
+		.count{margin-top:12px;font-size:13px;color:#666;text-align:right}
+		footer{margin-top:8px;font-size:12px;color:#888;text-align:center}
+	</style>
+</head>
+<body>
+	<main class="app">
+		<h1>할일 관리앱</h1>
+		<div class="input-row">
+			<input id="taskInput" type="text" placeholder="새 할일을 입력하세요" />
+			<button id="addBtn">추가</button>
+		</div>
+		<ul id="taskList"></ul>
+		<div class="count" id="taskCount"></div>
+		<footer>간단한 예제 — 체크하면 완료, 쓰레기통으로 삭제합니다.</footer>
+	</main>
+
+	<script>
+		// 간단한 데이터 구조: [{ text: '할일', done: false }, ...]
+		const TASKS_KEY = 'simple_todos_v1'
+		let tasks = []
+
+		const taskInput = document.getElementById('taskInput')
+		const addBtn = document.getElementById('addBtn')
+		const taskList = document.getElementById('taskList')
+		const taskCount = document.getElementById('taskCount')
+
+		// 로컬 스토리지에서 불러오기
+		function loadTasks(){
+			try{
+				const raw = localStorage.getItem(TASKS_KEY)
+				tasks = raw ? JSON.parse(raw) : []
+			}catch(e){ tasks = [] }
+		}
+
+		function saveTasks(){
+			localStorage.setItem(TASKS_KEY, JSON.stringify(tasks))
+		}
+
+		// 화면에 렌더링
+		function render(){
+			taskList.innerHTML = ''
+			tasks.forEach((t, idx) => {
+				const li = document.createElement('li')
+
+				const left = document.createElement('div')
+				left.className = 'task-left'
+
+				const cb = document.createElement('input')
+				cb.type = 'checkbox'
+				cb.checked = !!t.done
+				cb.addEventListener('change', () => toggleDone(idx))
+
+				const span = document.createElement('span')
+				span.className = 'task-text' + (t.done ? ' done' : '')
+				span.textContent = t.text
+
+				left.appendChild(cb)
+				left.appendChild(span)
+
+				const del = document.createElement('button')
+				del.className = 'small-btn'
+				del.textContent = '🗑'
+				del.title = '삭제'
+				del.addEventListener('click', () => removeTask(idx))
+
+				li.appendChild(left)
+				li.appendChild(del)
+				taskList.appendChild(li)
+			})
+
+			const remaining = tasks.filter(t=>!t.done).length
+			const total = tasks.length
+			taskCount.textContent = `남은 항목: ${remaining} / 전체: ${total}`
+			saveTasks()
+		}
+
+		function addTask(){
+			const text = taskInput.value.trim()
+			if(!text) return
+			tasks.push({text, done:false})
+			taskInput.value = ''
+			render()
+		}
+
+		function toggleDone(index){
+			if(tasks[index]){
+				tasks[index].done = !tasks[index].done
+				render()
+			}
+		}
+
+		function removeTask(index){
+			tasks.splice(index,1)
+			render()
+		}
+
+		// 단축키: Enter로 추가
+		taskInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') addTask() })
+		addBtn.addEventListener('click', addTask)
+
+		// 초기 실행
+		loadTasks()
+		render()
+	</script>
+</body>
+</html>
+
